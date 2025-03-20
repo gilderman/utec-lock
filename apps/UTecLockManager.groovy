@@ -4,25 +4,34 @@ definition(
     author: "Ilia Gilderman",
     description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
     category: "My Apps",
-    iconUrl: "",
+    iconUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/master/resources/icons/u-tec_2024_new_logo.svg",
     iconX2Url: "",
+	importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/apps/UTecLockManager.groovy"
     oauth: true,
     singleInstance: false,
     installOnOpen: true
 )
 
 preferences {
+	section("OAuth2 Settings") {
+		input "clientId", "password", title: "Client ID", required: true
+        input "clientSecret", "password", title: "Client Secret", required: true
+	}
+	
     section("Lock Discovery") {
         input "discoverLocks", "button", title: "Discover Locks", submitOnChange: true
     }
 }
 
 def oauthLogin() {
+	def clientId = settings.clientId
+    def clientSecret = settings.clientSecret
+
     def authUrl = "https://oauth.u-tec.com/authorize"
     def redirectUri = "https://cloud.hubitat.com/oauth/callback"
 
     def params = [
-        client_id: "1a26a1670d47d5098df3ae7c57d7ca60",
+        client_id: clientId,
         response_type: "code",
         redirect_uri: redirectUri,
         scope: "openapi"
@@ -57,12 +66,12 @@ def discoverDevices() {
 }
 
 def createChildDevice(deviceId, deviceName) {
-    log.debug "Creating child device: ${deviceName}"
+	log.debug "Creating child device: ${deviceName}"
 
-    if (!getChildDevice(deviceId)) {
+	if (!getChildDevice(deviceId)) {
         addChildDevice(
-            "myNamespace",  // Namespace of your lock driver
-            "Lock Driver",  // Name of your custom lock driver
+            "gilderman",  
+            "U-tech ULTRALOQ Latch 5 NFC", 
             deviceId,
             [label: deviceName, isComponent: false]
         )
