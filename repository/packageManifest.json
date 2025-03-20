@@ -1,0 +1,22 @@
+{
+    "packageName": "u-tec lock",
+    "author": "Ili Gilderman",
+    "namespace": "gilderman",
+    "description": "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
+    "category": "Safety & Security",
+    "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/repository/packageManifest.json",
+    "apps": [
+        {
+            "id": "utec-lock-manager",
+            "name": "UTec Lock Manager",
+            "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/apps/UTecLockManager.groovy"
+        }
+    ],
+    "drivers": [
+        {
+            "id": "utec-lock-device-handler",
+            "name": "UTec Lock Device",
+            "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/drivers/UTecLockDeviceHandler.groovy"
+        }
+    ]
+}
