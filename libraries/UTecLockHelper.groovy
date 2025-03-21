@@ -4,6 +4,7 @@ library (
     author: "Ilia Gilderman",
     description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
     category: "Utility",
+	importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockLibrary.groovy",
     documentationLink: ""
 )
 
