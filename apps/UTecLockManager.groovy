@@ -1,4 +1,4 @@
-import gilderman.UTecLockHelper
+#include gilderman.UTecLockHelper
 
 definition(
     name: "UTecLockManager",
