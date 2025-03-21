@@ -1,6 +1,6 @@
 metadata {
     definition(
-		name: "U-tech ULTRALOQ Latch 5 NFC", 
+		name: "U-tec Lock", 
 		namespace: "gilderman", 
 		author: "Ilia Gilderman",
 		importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/drivers/UTecLockDeviceHandler.groovy"

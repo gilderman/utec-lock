@@ -8,21 +8,21 @@
     "apps": [
         {
             "id": "utec-lock-manager",
-            "name": "UTec Lock Manager",
+            "name": "U-tec Integration",
             "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/apps/UTecLockManager.groovy"
         }
     ],
     "drivers": [
         {
             "id": "utec-lock-device-handler",
-            "name": "UTec Lock Device",
+            "name": "U-tec Lock",
             "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/drivers/UTecLockDeviceHandler.groovy"
         }
     ],
 	"libraries": [
     {
       "id": "utec-helper-library",
-      "name": "UTec helper library",
+      "name": "U-tec Integration Helper",
       "namespace": "gilderman",
       "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockLibrary.groovy",
       "required": true

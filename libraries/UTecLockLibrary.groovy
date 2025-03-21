@@ -1,5 +1,5 @@
 library (
-    name: "U-tec",
+    name: "U-tec Integration Helper",
     namespace: "gilderman",
     author: "Ilia Gilderman",
     description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
