@@ -15,34 +15,38 @@ definition(
 )
 
 preferences {
-	section("OAuth2 Settings") {
-		input "clientId", "password", title: "Client ID", required: true
-        input "clientSecret", "password", title: "Client Secret", required: true
-	}
-	
-    section("Lock Discovery") {
-        input "discoverLocks", "button", title: "Discover Locks", submitOnChange: true
-    }
+    page(name: "mainPage")
 }
 
-def oauthLogin() {
-	def clientId = settings.clientId
-    def clientSecret = settings.clientSecret
+def mainPage() {
+    dynamicPage(name: "mainPage", title: "U-tec Lock Setup", install: true, uninstall: true) {
+		section("OAuth2 Settings") {
+			input "clientId", "password", title: "Client ID", required: true
+			input "clientSecret", "password", title: "Client Secret", required: true
+		}
 
-    def authUrl = "https://oauth.u-tec.com/authorize"
-    def redirectUri = "https://cloud.hubitat.com/oauth/callback"
+        section("Login to U-tec") {
+            href(name: "login", title: "Login with U-tec", required: false, 
+                 description: "Click to authenticate", 
+                 url: getLoginUrl(settings.clientId))
+        }
+        section("Access Token Info") {
+            paragraph "Access Token: ${state.accessToken ?: 'Not Logged In'}"
+            paragraph "Refresh Token: ${state.refreshToken ?: 'Not Available'}"
+        }
+		
+		section("Lock Discovery") {
+			input "discoverLocks", "button", title: "Discover Locks", submitOnChange: true
+		}
+	}
+}
 
-    def params = [
-        client_id: clientId,
-        response_type: "code",
-        redirect_uri: redirectUri,
-        scope: "openapi"
-    ]
-
-    def loginUrl = "${authUrl}?${params.collect { k, v -> "${k}=${v}" }.join('&')}"
-    log.debug "Redirecting to OAuth login: ${loginUrl}"
-
-    return loginUrl
+def oauthCallback(Map params) {
+    if (params.code) {
+        exchangeCodeForTokens(params.code, settings.clientId, settings.clientSecret)
+    } else {
+        log.error "OAuth login failed: ${params}"
+    }
 }
 
 def installed() { initialize() }

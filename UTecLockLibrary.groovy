@@ -1,30 +1,24 @@
 library (
-    name: "UTecLockHelper",
+    name: "U-tec",
     namespace: "gilderman",
     author: "Ilia Gilderman",
-    description: "Helper for integration with U-tec ULTRALOQ Latch 5 NFC lock",
+    description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
     category: "Utility",
     documentationLink: ""
 )
 
 def TOKEN_URL = "https://oauth.u-tec.com/token"
 def API_URL = "https://api.u-tec.com/action"
-def REDIRECT_URI = "https://cloud.hubitat.com/oauth/stateredirect"
-
-
-def getLoginUrl(String clientId) {
-    def authUrl = "https://oauth.u-tec.com/authorize"
-
-    return "${authUrl}?client_id=${clientId}&redirect_uri=${REDIRECT_URI}&response_type=code&scope=openapi"
-}
 
 def exchangeCodeForTokens(String code, String clientId, String clientSecret) {
+    def redirectUri = "https://cloud.hubitat.com/oauth/stateredirect"
+
     def params = [
         uri: TOKEN_URL,
         body: [
             grant_type   : "authorization_code",
             code         : code,
-            redirect_uri : REDIRECT_URI,
+            redirect_uri : redirectUri,
             client_id    : clientId,
             client_secret: clientSecret
         ]
@@ -46,9 +40,14 @@ def exchangeCodeForTokens(String code, String clientId, String clientSecret) {
     }
 }
 
-def refreshAccessToken(String clientId, String clientSecret) {
+// Step 6: Refresh Token When Expired
+def refreshAccessToken() {
+    def tokenUrl = "https://api.uhome.com/oauth/token"
+    def clientId = "YOUR_CLIENT_ID"
+    def clientSecret = "YOUR_CLIENT_SECRET"
+
     def params = [
-        uri: TOKEN_URL,
+        uri: tokenUrl,
         body: [
             grant_type   : "refresh_token",
             refresh_token: state.refreshToken,
@@ -71,6 +70,7 @@ def refreshAccessToken(String clientId, String clientSecret) {
         log.error "Error refreshing token: ${e.message}"
     }
 }
+
 
 
 def getUHomeHeader(String name) {
