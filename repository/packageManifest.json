@@ -4,6 +4,7 @@
     "namespace": "gilderman",
     "description": "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
     "category": "Safety & Security",
+	"version": "1.0.0", 
     "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/repository/packageManifest.json",
     "apps": [
         {
@@ -24,7 +25,7 @@
       "id": "utec-lock-helper",
       "name": "UTecLockHelper",
       "namespace": "gilderman",
-      "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockLibrary.groovy",
+      "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockHelper.groovy",
       "required": true
     }
   ]

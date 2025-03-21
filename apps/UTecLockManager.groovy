@@ -14,6 +14,8 @@ definition(
     installOnOpen: true
 )
 
+def appVersion() { return "1.0.2" } 
+
 preferences {
     page(name: "mainPage")
 }
