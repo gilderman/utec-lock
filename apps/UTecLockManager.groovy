@@ -1,4 +1,4 @@
-import gilderman.UTecLockLibrary
+import gilderman.UTecLockHelper
 
 definition(
     name: "U-tec Lock Integration",
