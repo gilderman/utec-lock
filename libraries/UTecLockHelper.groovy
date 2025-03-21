@@ -1,15 +1,14 @@
 library (
-    name: "U-tec Integration Helper",
+    name: "UTecLockHelper",
     namespace: "gilderman",
     author: "Ilia Gilderman",
-    description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
+    description: "Helper for integration with U-tec ULTRALOQ Latch 5 NFC lock",
     category: "Utility",
-	importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockLibrary.groovy",
     documentationLink: ""
 )
 
-def TOKEN_URL = 'https://oauth.u-tec.com/token';
-def API_URL = 'https://api.u-tec.com/action';
+def TOKEN_URL = "https://oauth.u-tec.com/token"
+def API_URL = "https://api.u-tec.com/action"
 
 def getUHomeHeader(String name) {
     return [

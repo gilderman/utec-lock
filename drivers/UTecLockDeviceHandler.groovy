@@ -1,6 +1,6 @@
 metadata {
     definition(
-		name: "U-tec Lock", 
+		name: "UTecLock", 
 		namespace: "gilderman", 
 		author: "Ilia Gilderman",
 		importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/drivers/UTecLockDeviceHandler.groovy"

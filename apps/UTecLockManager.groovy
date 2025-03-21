@@ -1,7 +1,7 @@
 import gilderman.UTecLockHelper
 
 definition(
-    name: "U-tec Lock Integration",
+    name: "UTecLockManager",
     namespace: "gilderman",
     author: "Ilia Gilderman",
     description: "Integration with U-tec ULTRALOQ Latch 5 NFC lock",
