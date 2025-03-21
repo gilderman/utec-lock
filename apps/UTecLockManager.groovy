@@ -6,7 +6,7 @@ definition(
     category: "My Apps",
     iconUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/master/resources/icons/u-tec_2024_new_logo.svg",
     iconX2Url: "",
-	importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/apps/UTecLockManager.groovy"
+	importUrl: "https://raw.githubusercontent.com/gilderman/utec-lock/main/apps/UTecLockManager.groovy",
     oauth: true,
     singleInstance: false,
     installOnOpen: true
@@ -54,15 +54,23 @@ def initialize() {
 def discoverDevices() {
     log.debug "Starting lock discovery..."
     
-    // Simulate discovery (Replace this with actual API/device scanning logic)
-    def foundLocks = [
-        [id: "lock1", name: "Front Door Lock"],
-        [id: "lock2", name: "Back Door Lock"]
-    ]
-    
-    foundLocks.each { lock ->
-        createChildDevice(lock.id, lock.name)
+	def response = sendPostRequest("Discovery", null)
+	if (response) {
+        def status = response?.payload?.status
+        log.debug "Lock Status: ${status}"
+    } else {
+        log.warn "Failed to receive response from API"
     }
+	
+    // Simulate discovery (Replace this with actual API/device scanning logic)
+    //def foundLocks = [
+    //    [id: "lock1", name: "Front Door Lock"],
+    //    [id: "lock2", name: "Back Door Lock"]
+    //]
+    
+    //foundLocks.each { lock ->
+    //    createChildDevice(lock.id, lock.name)
+    //}
 }
 
 def createChildDevice(deviceId, deviceName) {

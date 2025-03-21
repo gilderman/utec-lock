@@ -18,5 +18,14 @@
             "name": "UTec Lock Device",
             "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/drivers/UTecLockDeviceHandler.groovy"
         }
-    ]
+    ],
+	"libraries": [
+    {
+      "id": "utec-helper-library",
+      "name": "UTec helper library",
+      "namespace": "gilderman",
+      "location": "https://raw.githubusercontent.com/gilderman/utec-lock/main/libraries/UTecLockLibrary.groovy",
+      "required": true
+    }
+  ]
 }
