@@ -19,6 +19,8 @@ preferences {
     input name: "logEnable", type: "bool", title: "Enable debug logging?", defaultValue: true
 }
 
+command "setMode", ["Integer"]
+
 def updated() {
     log.debug "Device updated"
     
