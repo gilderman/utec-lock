@@ -1,6 +1,6 @@
 import groovy.json.JsonOutput
 
-library (
+library(
     name: "UTecLockHelper",
     namespace: "gilderman",
     author: "Ilia Gilderman",
@@ -15,7 +15,7 @@ def getTokenUri() {
 }
 
 def getApiUri() {
-	return "https://api.u-tec.com/action"
+    return "https://api.u-tec.com/action"
 }
 
 def getRedirectUri() {
@@ -23,55 +23,65 @@ def getRedirectUri() {
 }
 
 def getLoginUrl(String clientId) {
-    if (state.accessToken == null)
-		createAccessToken()
-        
+    if (state.accessToken == null) {
+        createAccessToken()
+    }
+
     def authUrl = "https://oauth.u-tec.com/authorize"
     def oauthState = URLEncoder.encode("${getHubUID()}/apps/${app.id}/callback?access_token=${state.accessToken}")
-        
+
     return "${authUrl}?client_id=${clientId}&redirect_uri=${URLEncoder.encode(getRedirectUri())}&response_type=code&scope=openapi&state=${oauthState}"
 }
 
 def oauthCallback() {
     if (params.code) {
-        exchangeCodeForTokens(params.code)
-        if (state.deviceAccessToken)
-			oauthSuccess()
-        else
-			oauthFailure()
+        if (exchangeCodeForTokens(params.code)) {
+            oauthSuccess()
+        } else {
+            oauthFailure()
+        }
     } else {
         render contentType: "text/html", data: "<h1>OAuth Failed</h1><p>Authorization code missing.</p>"
     }
 }
 
-def getTokenParams(String grant_type, Map param) {
+def getTokenParams(String grantType, Map param) {
     return [
-        grant_type: grant_type,
-        client_id: state.clientId,
-        client_secret: state.clientSecret,
+        grant_type: grantType,
+        // These are app preferences, not state values. The app never populates
+        // state.clientId/state.clientSecret, and Clear State deliberately erases state.
+        client_id: settings.clientId?.toString()?.trim(),
+        client_secret: settings.clientSecret?.toString()?.trim(),
         redirect_uri: getRedirectUri()
     ] + param
 }
 
 def saveTokens(resp) {
-    state.deviceAccessToken  = resp.data.access_token
-    state.deviceRefreshToken = resp.data.refresh_token
-    
-    logDebug("Access Token: ${state.deviceAccessToken}")
-    logDebug("Refresh Token: ${state.deviceRefreshToken}")
+    state.deviceAccessToken = resp.data.access_token
+
+    // Some OAuth providers rotate refresh tokens; others omit them on refresh.
+    // Preserve the existing token when the response omits a replacement.
+    if (resp.data.refresh_token) {
+        state.deviceRefreshToken = resp.data.refresh_token
+    }
+
+    // Tokens must never be written to the Hubitat log.
+    logDebug("U-tec access token updated.")
 }
 
 def scheduleTokenRefresh() {
-    def delay = state.tokenExpires - now()  // Time until expiration
+    def delay = state.authTokenExpires - now()
     if (delay > 0) {
-        runIn(delay / 1000, refreshAccessToken)  // Convert milliseconds to seconds
-        logDebug("Token will be refreshed in ${delay / 1000} seconds.")
+        def delaySeconds = Math.max(1, (delay / 1000).toInteger())
+        runIn(delaySeconds, refreshAccessToken)
+        logDebug("Token refresh scheduled in ${delaySeconds} seconds.")
     } else {
-        log.warn "Token is already expired or invalid expiration time."
+        log.warn "Token is already expired or has no valid expiration time."
     }
 }
 
 def tokenExchange(Map body, boolean refresh = false) {
+    def success = false
     def params = [
         uri: getTokenUri(),
         body: body
@@ -79,14 +89,11 @@ def tokenExchange(Map body, boolean refresh = false) {
 
     try {
         httpPost(params) { resp ->
-            if (resp.status == 200) {
+            if (resp.status == 200 && resp.data?.access_token) {
                 saveTokens(resp)
- 
-                if (!refresh) {
-                	state.authTokenExpires = (now() + (resp.data.expires_in * 1000)) - 60000
-                    
-                    scheduleTokenRefresh()
-                }
+                state.authTokenExpires = now() + (resp.data.expires_in.toLong() * 1000) - 60000
+                scheduleTokenRefresh()
+                success = true
             } else {
                 log.error "Token ${refresh ? 'refresh' : 'exchange'} failed: ${resp.status} - ${resp.data}"
             }
@@ -94,24 +101,31 @@ def tokenExchange(Map body, boolean refresh = false) {
     } catch (Exception e) {
         log.error "Error ${refresh ? 'refreshing' : 'getting'} tokens: ${e.message}"
     }
+
+    return success
 }
 
 def exchangeCodeForTokens(String code) {
-    tokenExchange(getTokenParams("authorization_code", [code: code]))
+    return tokenExchange(getTokenParams("authorization_code", [code: code]))
 }
 
 def refreshAccessToken() {
-    tokenExchange(getTokenParams("refresh_token", [refresh_token: state.deviceRefreshToken]), true)
+    if (!state.deviceRefreshToken) {
+        log.error "Cannot refresh U-tec access token: no refresh token is stored. Reauthorize the integration."
+        return false
+    }
+
+    return tokenExchange(getTokenParams("refresh_token", [refresh_token: state.deviceRefreshToken]), true)
 }
 
 def oauthSuccess() {
-	state.loginSuccess = true
+    state.loginSuccess = true
     render(contentType: 'text/html', data: "<html><body><p>Login successful! You can close this window.</p><button onclick=\"window.close();\">Close</button></body></html>")
 }
 
 def oauthFailure() {
     state.loginSuccess = false
-    render(contentType: 'text/html', data: "<html><body><p>Authentication Failed!Close this window and try again.</p><button onclick=\"window.close();\">Close</button></body></html>")
+    render(contentType: 'text/html', data: "<html><body><p>Authentication failed. Close this window and try again.</p><button onclick=\"window.close();\">Close</button></body></html>")
 }
 
 def getUHomeHeader(String name, namespace = "Uhome.Device") {
@@ -144,7 +158,6 @@ def createPostPayload(String payloadName, Map param = [:], String deviceId) {
 
 def sendJsonToDevice(def headers, def body) {
     def result = null
-    
     def params = [
         uri: getApiUri(),
         headers: headers,
@@ -152,19 +165,19 @@ def sendJsonToDevice(def headers, def body) {
         body: body
     ]
 
-    logDebug("➡️ Sending JSON to ${getApiUri()}: headers: ${headers} ${groovy.json.JsonOutput.toJson(body)}")
+    // Do not log headers: they contain the bearer token.
+    logDebug("Sending JSON to ${getApiUri()}: ${JsonOutput.toJson(body)}")
 
     try {
         httpPostJson(params) { resp ->
-            logDebug("✅ Response Status: ${resp.status}")
-            logDebug("⬅️ Response Data: ${resp.data}")
-            
+            logDebug("Response status: ${resp.status}")
+            logDebug("Response data: ${resp.data}")
             result = resp.data
         }
     } catch (Exception e) {
-        log.error "❌ HTTP Request failed: ${e.message}"
+        log.error "HTTP request failed: ${e.message}"
     }
-    
+
     return result
 }
 
@@ -173,24 +186,18 @@ def sendAuthorizedPostRequest(payload, token = state.deviceAccessToken) {
 }
 
 def sendPostRequest(String name, String deviceId, Map param = [:]) {
-    def payload = null
-
-    if (name == "Set") {
-        payload = createRegitsrationPayload()
-    }
-    else {
-    	payload = createPostPayload(name, param, deviceId)
-    }
-    
+    def payload = name == "Set" ? createRegitsrationPayload() : createPostPayload(name, param, deviceId)
     def response = sendAuthorizedPostRequest(payload)
 
-    if (response?.payload?.error) {
-        log.warn "Error detected: ${response.payload.error}"
-
-        if (response.payload.error.code == "INVALID_TOKEN") {
-            refreshAccessToken()
+    if (response?.payload?.error?.code == "INVALID_TOKEN") {
+        log.warn "U-tec rejected the access token; attempting a token refresh."
+        if (refreshAccessToken()) {
             response = sendAuthorizedPostRequest(payload)
+        } else {
+            log.error "U-tec token refresh failed. Reauthorize the integration."
         }
+    } else if (response?.payload?.error) {
+        log.warn "U-tec API error: ${response.payload.error}"
     }
 
     return response
@@ -203,47 +210,43 @@ def lockCommand(String command, String deviceId, Map argMap = [:]) {
             name: command
         ]
     ]
-    
+
     if (argMap) {
         param.command.arguments = argMap
     }
 
     def response = sendPostRequest('Command', deviceId, param)
 
-    if (response) {
-        logDebug("Lock command '${command}' sent to device ${deviceId} successfully.")
+    if (response && !response?.payload?.error) {
+        logDebug("Lock command '${command}' accepted for device ${deviceId}.")
     } else {
-        log.warn "Failed to send lock command '${command}' to device ${deviceId}."
+        log.warn "Lock command '${command}' was rejected: ${response?.payload?.error ?: 'no response'}"
     }
 
     return response
 }
 
 def parseStatusResponse(resp) {
-	// Get first device only
-	def device = resp.payload.devices[0]
-
-	def result = [
-  		id: device.id,
-  		onlineStatus: device.states.find { it.name == "status" }?.value,
-  		lockStatus: device.states.find { it.name == "lockState" }?.value,
-  		batteryLevel: device.states.find { it.name == "level" }?.value,
+    def device = resp.payload.devices[0]
+    return [
+        id: device.id,
+        onlineStatus: device.states.find { it.name == "status" }?.value,
+        lockStatus: device.states.find { it.name == "lockState" }?.value,
+        batteryLevel: device.states.find { it.name == "level" }?.value,
         lockMode: device.states.find { it.name == "lockMode" }?.value
-	]
-
-    return result
+    ]
 }
 
 def getStatusCommand(String deviceId) {
     def response = sendPostRequest('Query', deviceId)
 
-    if (response) {
-        logDebug("Query command sent to device ${deviceId} successfully.")
+    if (response && !response?.payload?.error && response?.payload?.devices) {
+        logDebug("Query command accepted for device ${deviceId}.")
         return parseStatusResponse(response)
-    } else {
-        log.warn "Failed to send query command to device ${deviceId}."
-        return null
     }
+
+    log.warn "Query command failed: ${response?.payload?.error ?: 'no response'}"
+    return null
 }
 
 def registerNotificationsCallback() {
@@ -258,14 +261,16 @@ def registerNotificationsCallback() {
             ]
         ]
     ]
-    
-	sendAuthorizedPostRequest(payload)
+
+    return sendAuthorizedPostRequest(payload)
 }
 
 def setDebugOn(level) {
-	state['debugOn'] = level    
+    state['debugOn'] = level
 }
 
 def logDebug(msg) {
-    if (state['debugOn']) log.debug msg
+    if (state['debugOn']) {
+        log.debug msg
+    }
 }
