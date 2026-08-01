@@ -56,13 +56,20 @@ def getTokenParams(String grantType, Map param) {
     ] + param
 }
 
-def saveTokens(resp) {
-    state.deviceAccessToken = resp.data.access_token
+def getTokenData(resp) {
+    // U-tec may return either the OAuth payload directly or wrapped in
+    // [code: 200, data: [...]], while the HTTP status remains 200.
+    def responseData = resp?.data
+    return responseData?.data instanceof Map ? responseData.data : responseData
+}
+
+def saveTokens(Map tokenData) {
+    state.deviceAccessToken = tokenData.access_token
 
     // Some OAuth providers rotate refresh tokens; others omit them on refresh.
     // Preserve the existing token when the response omits a replacement.
-    if (resp.data.refresh_token) {
-        state.deviceRefreshToken = resp.data.refresh_token
+    if (tokenData.refresh_token) {
+        state.deviceRefreshToken = tokenData.refresh_token
     }
 
     // Tokens must never be written to the Hubitat log.
@@ -89,9 +96,10 @@ def tokenExchange(Map body, boolean refresh = false) {
 
     try {
         httpPost(params) { resp ->
-            if (resp.status == 200 && resp.data?.access_token) {
-                saveTokens(resp)
-                state.authTokenExpires = now() + (resp.data.expires_in.toLong() * 1000) - 60000
+            def tokenData = getTokenData(resp)
+            if (resp.status == 200 && tokenData?.access_token) {
+                saveTokens(tokenData)
+                state.authTokenExpires = now() + (tokenData.expires_in.toLong() * 1000) - 60000
                 scheduleTokenRefresh()
                 success = true
             } else {
@@ -274,3 +282,5 @@ def logDebug(msg) {
         log.debug msg
     }
 }
+
+
